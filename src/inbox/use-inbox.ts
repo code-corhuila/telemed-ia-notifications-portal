@@ -156,7 +156,7 @@ export function useInbox(api: InboxApi, pageSize = 20): Inbox {
     notifications: data.notifications,
     unreadCount: data.unreadCount,
     filter,
-    total: null,
+    total: data.meta?.total ?? null,
     hasMore: data.meta !== null && data.meta.page < data.meta.totalPages,
     loadingMore: data.loadingMore,
     error: data.error,
