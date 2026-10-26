@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 
 import { NotificationsPage } from './notifications-page';
 import type { ShellBridge } from './shell-bridge';
+import { ShellBridgeProvider } from './shell-bridge-context';
 
 /**
  * Exposed as `./mount`; the shell calls it from MountedRemoteComponent.
@@ -10,11 +11,13 @@ import type { ShellBridge } from './shell-bridge';
  * The portal renders only inside `element` and returns the function the
  * shell calls when the page goes away. Calling it twice is harmless.
  */
-export function mount(element: HTMLElement, _bridge: ShellBridge): () => void {
+export function mount(element: HTMLElement, bridge: ShellBridge): () => void {
   const root = createRoot(element);
   root.render(
     <StrictMode>
-      <NotificationsPage />
+      <ShellBridgeProvider bridge={bridge}>
+        <NotificationsPage />
+      </ShellBridgeProvider>
     </StrictMode>,
   );
 
