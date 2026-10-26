@@ -136,7 +136,8 @@ export const INBOX_STYLES = `
   .tn-title { font-size: 26px; }
   .tn-header > * { flex: 1 1 100%; }
   .tn-segmented { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
-  .tn-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; }
+  .tn-chips { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; }
+  .tn-chips::-webkit-scrollbar { display: none; }
   .tn-chip { flex: none; }
   .tn-item { gap: 12px; padding: 16px 16px 8px; }
   .tn-icon { width: 40px; height: 40px; }
