@@ -6,7 +6,7 @@ import type { ShellBridge } from './shell-bridge';
 function fakeBridge(): ShellBridge {
   return {
     api: {
-      get: vi.fn(),
+      get: vi.fn().mockReturnValue(new Promise(() => undefined)),
       post: vi.fn(),
       put: vi.fn(),
       delete: vi.fn(),
@@ -37,7 +37,7 @@ describe('mount', () => {
       mount(host, fakeBridge());
     });
 
-    const heading = screen.getByRole('heading', { level: 1, name: 'Notifications' });
+    const heading = screen.getByRole('heading', { level: 1, name: 'Notificaciones' });
     expect(host).toContainElement(heading);
   });
 
