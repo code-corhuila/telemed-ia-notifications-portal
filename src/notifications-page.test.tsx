@@ -27,13 +27,17 @@ const confirmed: InboxNotification = {
   createdAt: new Date(Date.now() - 10 * 60_000).toISOString(),
 };
 
-function inbox(data: InboxNotification[]): InboxPage {
-  return { data, meta: { page: 1, limit: 20, total: data.length, totalPages: 1 } };
+function inbox(data: InboxNotification[], meta: Partial<InboxPage['meta']> = {}): InboxPage {
+  return { data, meta: { page: 1, limit: 20, total: data.length, totalPages: 1, ...meta } };
 }
 
-function fakeBridge(listed: Promise<InboxPage> = Promise.resolve(inbox([documentReady, confirmed]))) {
-  const get = vi.fn((path: string) =>
-    path === '/notifications/unread-count' ? Promise.resolve({ unreadCount: 1 }) : listed,
+const NETWORK_ERROR = { status: 0, code: 'NETWORK_ERROR', message: 'Cannot reach the server.', traceId: 'trace-9' };
+
+type Listing = (params?: Record<string, string | number>) => Promise<InboxPage>;
+
+function fakeBridge(list: Listing = () => Promise.resolve(inbox([documentReady, confirmed]))) {
+  const get = vi.fn((path: string, params?: Record<string, string | number>) =>
+    path === '/notifications/unread-count' ? Promise.resolve({ unreadCount: 1 }) : list(params),
   );
   const bridge: ShellBridge = {
     api: { get: get as ShellBridge['api']['get'], post: vi.fn(), put: vi.fn().mockResolvedValue(null), delete: vi.fn() },
@@ -69,16 +73,27 @@ describe('NotificationsPage', () => {
     expect(within(today).getByText('No leída')).toBeInTheDocument();
   });
 
-  it('says it is loading until the inbox arrives', async () => {
-    renderPage(fakeBridge(new Promise(() => undefined)));
+  it('shows a busy placeholder until the inbox arrives', async () => {
+    renderPage(fakeBridge(() => new Promise(() => undefined)));
 
-    expect(screen.getByRole('status')).toHaveTextContent('Cargando notificaciones');
+    const loading = screen.getByRole('status');
+    expect(loading).toHaveTextContent('Cargando notificaciones');
+    expect(loading).toHaveAttribute('aria-busy', 'true');
   });
 
-  it('explains a failure in Spanish', async () => {
-    renderPage(fakeBridge(Promise.reject({ status: 0, code: 'NETWORK_ERROR', message: 'Cannot reach the server.' })));
+  it('explains a failure with the support reference and retries', async () => {
+    const user = userEvent.setup();
+    const list = vi.fn<Listing>().mockRejectedValueOnce(NETWORK_ERROR).mockResolvedValue(inbox([documentReady]));
+    renderPage(fakeBridge(list));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos conectarnos.');
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No pudimos cargar tus notificaciones');
+    expect(alert).toHaveTextContent('No pudimos conectarnos.');
+    expect(alert).toHaveTextContent('Referencia para soporte: trace-9');
+
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+
+    expect(await screen.findByText('El resumen de tu consulta está listo')).toBeInTheDocument();
   });
 
   it('opens the documents page and marks the notification read', async () => {
@@ -146,9 +161,53 @@ describe('NotificationsPage', () => {
     expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('says when there is nothing to show', async () => {
-    renderPage(fakeBridge(Promise.resolve(inbox([]))));
+  it('says when there is nothing yet', async () => {
+    renderPage(fakeBridge(() => Promise.resolve(inbox([]))));
 
-    expect(await screen.findByText('Aún no tienes notificaciones.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 2, name: 'Aún no tienes notificaciones' })).toBeInTheDocument();
+    expect(screen.getByText(/Aquí te avisaremos/)).toBeInTheDocument();
+  });
+
+  it('offers to clear a filter that leaves nothing', async () => {
+    const user = userEvent.setup();
+    await loaded(fakeBridge((params) => Promise.resolve(inbox(params ? [] : [documentReady]))));
+
+    await user.click(screen.getByRole('button', { name: 'Documentos' }));
+    await screen.findByRole('heading', { level: 2, name: 'No hay notificaciones con este filtro' });
+    await user.click(screen.getByRole('button', { name: 'Ver todas' }));
+
+    expect(await screen.findByText('El resumen de tu consulta está listo')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Todos' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('loads more until every notification is shown', async () => {
+    const user = userEvent.setup();
+    const list = vi
+      .fn<Listing>()
+      .mockResolvedValueOnce(inbox([documentReady], { total: 2, totalPages: 2 }))
+      .mockResolvedValueOnce(inbox([confirmed], { page: 2, total: 2, totalPages: 2 }));
+    const bridge = await loaded(fakeBridge(list));
+    expect(screen.getByText('Mostrando 1 de 2 notificaciones')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Cargar más' }));
+
+    expect(await screen.findByText('Tu cita fue confirmada')).toBeInTheDocument();
+    expect(bridge.api.get).toHaveBeenCalledWith('/notifications', { page: 2, limit: 20 });
+    expect(screen.getByText('Mostrando 2 de 2 notificaciones')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cargar más' })).not.toBeInTheDocument();
+  });
+
+  it('tells when marking read failed and lets the user close it', async () => {
+    const user = userEvent.setup();
+    const bridge = fakeBridge();
+    vi.mocked(bridge.api.put).mockRejectedValue(NETWORK_ERROR);
+    await loaded(bridge);
+
+    await user.click(screen.getByRole('button', { name: /^Marcar como leída/ }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No pudimos conectarnos.');
+    await user.click(within(alert).getByRole('button', { name: 'Cerrar aviso' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
