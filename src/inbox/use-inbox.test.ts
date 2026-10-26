@@ -58,6 +58,7 @@ describe('useInbox', () => {
     expect(api.list).toHaveBeenCalledWith({ page: 1, limit: 20, unreadOnly: false });
     expect(result.current.notifications.map((n) => n.id)).toEqual([item(1).id, item(2).id]);
     expect(result.current.unreadCount).toBe(1);
+    expect(result.current.total).toBe(2);
     expect(result.current.hasMore).toBe(false);
   });
 
