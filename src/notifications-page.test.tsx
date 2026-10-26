@@ -170,7 +170,7 @@ describe('NotificationsPage', () => {
 
   it('offers to clear a filter that leaves nothing', async () => {
     const user = userEvent.setup();
-    await loaded(fakeBridge((params) => Promise.resolve(inbox(params ? [] : [documentReady]))));
+    await loaded(fakeBridge((params) => Promise.resolve(inbox(params?.['type'] ? [] : [documentReady]))));
 
     await user.click(screen.getByRole('button', { name: 'Documentos' }));
     await screen.findByRole('heading', { level: 2, name: 'No hay notificaciones con este filtro' });
