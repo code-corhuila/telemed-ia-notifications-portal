@@ -1,0 +1,14 @@
+services:
+  notifications-portal:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    ports:
+      - "${PORT:-4208}:80"
+    networks:
+      - platform
+
+networks:
+  platform:
+    external: true
+    name: platform

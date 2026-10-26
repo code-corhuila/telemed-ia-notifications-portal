@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, qa, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run unit tests
+        run: npm run test:ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Verify the remote exposes ./mount
+        run: |
+          node -e "
+            const entry = require('./dist/remoteEntry.json');
+            const mount = entry.exposes.find((e) => e.key === './mount');
+            if (entry.name !== 'notifications' || !mount) throw new Error('remoteEntry.json does not expose ./mount');
+            require('fs').accessSync('dist/' + mount.outFileName);
+          "
