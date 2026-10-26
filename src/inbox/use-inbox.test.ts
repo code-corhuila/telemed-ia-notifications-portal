@@ -63,7 +63,8 @@ describe('useInbox', () => {
 
   it('shows the error and loads again on retry', async () => {
     const list = vi.fn().mockRejectedValueOnce(TIMEOUT).mockResolvedValue(page([item(1)]));
-    const { result } = renderHook(() => useInbox(fakeApi({ list })));
+    const api = fakeApi({ list });
+    const { result } = renderHook(() => useInbox(api));
 
     await waitFor(() => expect(result.current.status).toBe('error'));
     expect(result.current.error).toEqual({
@@ -99,7 +100,8 @@ describe('useInbox', () => {
   it('ignores an answer that arrives after a newer filter', async () => {
     const slow = deferred<InboxPage>();
     const list = vi.fn().mockReturnValueOnce(slow.promise).mockResolvedValue(page([item(7)]));
-    const { result } = renderHook(() => useInbox(fakeApi({ list })));
+    const api = fakeApi({ list });
+    const { result } = renderHook(() => useInbox(api));
 
     act(() => result.current.setFilter({ unreadOnly: true, type: null }));
     await waitFor(() => expect(result.current.status).toBe('ready'));
