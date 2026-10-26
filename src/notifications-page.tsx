@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import { createInboxApi } from './inbox/inbox-api';
+import { ActionNotice, EmptyState, ErrorState, InboxSkeleton, LoadMore } from './inbox/inbox-states';
 import { INBOX_STYLES } from './inbox/inbox-styles';
 import type { InboxNotificationType } from './inbox/inbox-types';
 import { Icon, NotificationItem } from './inbox/notification-item';
@@ -92,11 +93,7 @@ export function NotificationsPage() {
         </div>
       </div>
 
-      {inbox.actionError && (
-        <p className="tn-message" role="alert">
-          {inbox.actionError.message}
-        </p>
-      )}
+      {inbox.actionError && <ActionNotice error={inbox.actionError} onDismiss={inbox.dismissActionError} />}
       <InboxContent inbox={inbox} onOpen={open} />
     </section>
   );
@@ -106,22 +103,18 @@ function InboxContent({ inbox, onOpen }: { inbox: Inbox; onOpen: (view: Notifica
   const bridge = useShellBridge();
 
   if (inbox.status === 'loading') {
-    return (
-      <p className="tn-message" role="status">
-        Cargando notificaciones…
-      </p>
-    );
+    return <InboxSkeleton />;
   }
   if (inbox.status === 'error') {
-    return (
-      <p className="tn-message" role="alert">
-        {inbox.error?.message}
-      </p>
-    );
+    return <ErrorState error={inbox.error} onRetry={inbox.retry} />;
   }
   if (inbox.notifications.length === 0) {
-    const filtered = inbox.filter.unreadOnly || inbox.filter.type !== null;
-    return <p className="tn-message">{filtered ? 'No hay notificaciones con este filtro.' : 'Aún no tienes notificaciones.'}</p>;
+    return (
+      <EmptyState
+        filtered={inbox.filter.unreadOnly || inbox.filter.type !== null}
+        onShowAll={() => inbox.setFilter({ unreadOnly: false, type: null })}
+      />
+    );
   }
 
   const now = new Date();
@@ -148,6 +141,13 @@ function InboxContent({ inbox, onOpen }: { inbox: Inbox; onOpen: (view: Notifica
           </ul>
         </section>
       ))}
+      <LoadMore
+        shown={inbox.notifications.length}
+        total={inbox.total ?? inbox.notifications.length}
+        hasMore={inbox.hasMore}
+        loading={inbox.loadingMore}
+        onLoadMore={inbox.loadMore}
+      />
     </>
   );
 }
