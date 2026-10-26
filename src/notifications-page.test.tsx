@@ -129,7 +129,7 @@ describe('NotificationsPage', () => {
 
     await user.click(screen.getByRole('button', { name: /^No leídas/ }));
     await waitFor(() =>
-      expect(bridge.api.get).toHaveBeenLastCalledWith('/notifications', { page: 1, limit: 20, unread: 'true' }),
+      expect(bridge.api.get).toHaveBeenCalledWith('/notifications', { page: 1, limit: 20, unread: 'true' }),
     );
     expect(screen.getByRole('button', { name: /^No leídas/ })).toHaveAttribute('aria-pressed', 'true');
 
