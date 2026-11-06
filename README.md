@@ -2,8 +2,8 @@
 
 > notifications bounded context: web UI (remote)
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+Part of the **TeleMed IA** distributed system, Grupo 2.
+Governance and documentation live in [`telemed-ia-docs`](https://github.com/code-corhuila/telemed-ia-docs).
 
 ## Development
 
@@ -64,4 +64,4 @@ branch into another: `merge develop -> qa` and `merge qa -> main` do not exist i
 `main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
 rule.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+Full policy: `00-governance/branching-policy.md` in `telemed-ia-docs`.
