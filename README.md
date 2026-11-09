@@ -2,8 +2,8 @@
 
 > notifications bounded context: web UI (remote)
 
-Part of the **LMS Library** distributed system — team `lms-library`, Grupo 2.
-Governance and documentation live in [`library-docs`](https://github.com/code-corhuila/library-docs).
+Part of the **TeleMed IA** distributed system, Grupo 2.
+Governance and documentation live in [`telemed-ia-docs`](https://github.com/code-corhuila/telemed-ia-docs).
 
 ## Development
 
@@ -31,6 +31,22 @@ The shell manifest (`public/federation.manifest.json`) points `notifications` at
 
 `serve` reads `PORT`, `HOST` and `SHELL_ORIGIN` (the only origin allowed by CORS).
 
+## Docker
+
+```bash
+docker network create platform   # once, if the platform network does not exist yet
+docker compose -f deploy/compose.yml up -d --build
+```
+
+The image builds the bundle and serves it with nginx on port 4208 (`PORT` changes it). It serves only
+`remoteEntry.json`, the import map and the hashed bundles; anything else is 404. The JSON files are
+never cached, the bundles are cached for a year.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request to `develop`, `qa` and `main`: type check,
+tests, production build, and a check that `remoteEntry.json` exposes `./mount`.
+
 ## Branching
 
 Three permanent branches. **None of them accepts a direct commit** — you enter through a child
@@ -48,4 +64,4 @@ branch into another: `merge develop -> qa` and `merge qa -> main` do not exist i
 `main` requires **1 approval from `ariel5253`**. On `develop` and `qa` the team sets its own review
 rule.
 
-Full policy: `00-governance/branching-policy.md` in `library-docs`.
+Full policy: `00-governance/branching-policy.md` in `telemed-ia-docs`.

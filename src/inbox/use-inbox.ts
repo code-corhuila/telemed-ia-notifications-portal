@@ -15,6 +15,8 @@ export interface InboxState {
   /** Null until known, or when the count could not be read. */
   readonly unreadCount: number | null;
   readonly filter: InboxFilterState;
+  /** How many notifications match the filter, from the API; null until known. */
+  readonly total: number | null;
   readonly hasMore: boolean;
   readonly loadingMore: boolean;
   /** Why the list could not load (status error). */
@@ -32,7 +34,7 @@ export interface Inbox extends InboxState {
   dismissActionError(): void;
 }
 
-type Data = Omit<InboxState, 'filter' | 'hasMore'> & { readonly meta: InboxMeta | null };
+type Data = Omit<InboxState, 'filter' | 'total' | 'hasMore'> & { readonly meta: InboxMeta | null };
 
 const INITIAL: Data = { status: 'loading', notifications: [], meta: null, unreadCount: null, loadingMore: false, error: null, actionError: null };
 
@@ -154,6 +156,7 @@ export function useInbox(api: InboxApi, pageSize = 20): Inbox {
     notifications: data.notifications,
     unreadCount: data.unreadCount,
     filter,
+    total: data.meta?.total ?? null,
     hasMore: data.meta !== null && data.meta.page < data.meta.totalPages,
     loadingMore: data.loadingMore,
     error: data.error,
